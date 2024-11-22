@@ -8,6 +8,7 @@ TMDB_SEARCH_URL_MOVIES = "https://api.themoviedb.org/3/search/movie"
 TMDB_SEARCH_URL_TVSHOWS = "https://api.themoviedb.org/3/search/tv"
 TMDB_DETAIL_URL_MOVIE = "https://api.themoviedb.org/3/movie"
 TMDB_DETAIL_URL_TVSHOW = "https://api.themoviedb.org/3/tv"
+TMDB_TOP_RATED_MOVIES = "https://api.themoviedb.org/3/trending/all/day"
 
 # Function to choose the URL based on search type
 def choose_url(route):
@@ -24,6 +25,15 @@ def get_details(item_id, route):
     if response.status_code == 200:
         return response.json()
     return None
+
+
+# Function to fetch trending movies and TV shows
+def fetch_trending():
+    response = requests.get(TMDB_TOP_RATED_MOVIES, params={"api_key": TMDB_API_KEY, "language": "en-US"})
+    if response.status_code == 200:
+        return response.json().get("results", [])
+    return []
+
 
 # Function to perform the search
 def search(query, route):
@@ -48,12 +58,48 @@ def main(page: ft.Page):
     # Results container
     results_container = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True, spacing=10, height=450)
 
+    # Function to display trending results on the main page
+    def show_trending():
+        trending_items = fetch_trending()
+        results_container.controls.clear()
+
+        for item in trending_items:
+            title = item.get("title") or item.get("name", "No Title Available")
+            overview = item.get("overview", "No description available.")
+            poster_path = item.get("poster_path")
+            poster_url = f"https://image.tmdb.org/t/p/w200{poster_path}" if poster_path else None
+
+            result_card = ft.Container(
+                content=ft.Row(
+                    [
+                        ft.Image(
+                            src=poster_url,
+                            width=100,
+                            height=150,
+                            fit="cover",
+                        ) if poster_url else ft.Container(width=100, height=150, bgcolor="gray"),
+                        ft.Column(
+                            [
+                                ft.Text(title, weight="bold", size=16),
+                                ft.Text(f"Rating: {item.get('vote_average', 'N/A'):.1f}/10", size=14),
+                                ft.Text(overview, max_lines=4, overflow="ellipsis"),
+                            ],
+                            expand=True,
+                        ),
+                    ],
+                    spacing=10,
+                )
+            )
+            results_container.controls.append(result_card)
+        results_container.update()
+
     # Function to search and display results
     def on_search(route):
         nonlocal last_category
         query = search_input.value.strip()
         last_category = route
         if not query:
+            show_trending()
             results_container.controls.clear()
             results_container.update()
             return
@@ -121,7 +167,6 @@ def main(page: ft.Page):
                         )
                     ),
                 )
-
                 results_container.controls.append(result_card)
         else:
             results_container.controls.append(ft.Text("No results found."))
@@ -186,6 +231,7 @@ def main(page: ft.Page):
     movies_button = ft.ElevatedButton("Movies", on_click=lambda e: on_category_change("Movies"))
     tvshows_button = ft.ElevatedButton("TV Shows", on_click=lambda e: on_category_change("TV Shows"))
 
+
     # Set up the layout of the page
     page.add(
         ft.Column(
@@ -194,7 +240,7 @@ def main(page: ft.Page):
                 ft.Row([search_input, search_button], spacing=10),
                 results_container,
             ]
-        )
+        ),
     )
-
+    show_trending()
 ft.app(target=main, view=ft.AppView.WEB_BROWSER)
