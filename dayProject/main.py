@@ -39,17 +39,20 @@ def search(query, route):
 def main(page: ft.Page):
     page.title = "Movie / TV Show Search App"
     page.padding = 20
+    last_category = "All"
 
     # Create search input and button
     search_input = ft.TextField(label="Search Movie/TV Show", expand=True)
     search_button = ft.ElevatedButton("Search", on_click=lambda e: on_search("All"))
 
     # Results container
-    results_container = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True, spacing=10)
+    results_container = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True, spacing=10, height=450)
 
     # Function to search and display results
     def on_search(route):
+        nonlocal last_category
         query = search_input.value.strip()
+        last_category = route
         if not query:
             results_container.controls.clear()
             results_container.update()
@@ -90,6 +93,9 @@ def main(page: ft.Page):
                     details = get_details(item_id, route)
                     if details:
                         show_details(details)
+                    page.remove(search_button)
+                    page.remove(search_input)
+                    page.add(ft.ElevatedButton("Back", on_click=lambda e: main(page)))
 
                 result_card = ft.Container(content=
                     ft.GestureDetector(
@@ -121,21 +127,50 @@ def main(page: ft.Page):
             results_container.controls.append(ft.Text("No results found."))
 
         results_container.update()
-
+    
     # Function to display detailed information
     def show_details(details):
         title = details.get("title") or details.get("name", "No Title Available")
         genres = ", ".join([genre["name"] for genre in details.get("genres", [])])
         rating = details.get("vote_average", "N/A")
         overview = details.get("overview", "No description available.")
+        poster_path = details.get("poster_path")
+        poster_url = (
+            f"https://image.tmdb.org/t/p/w200{poster_path}"
+            if poster_path
+            else None
+        )
         
         # Display details in a new column or replace existing content
-        details_column = ft.Column([ 
-            ft.Text(title, weight="bold", size=18),
-            ft.Text(f"Genres: {genres}", size=14),
-            ft.Text(f"Rating: {rating}/10", size=14),
-            ft.Text(f"Overview: {overview}", size=14),
-        ])
+        details_column = ft.Column(
+            controls=[
+                ft.Row([
+                    ft.Column([ # Title and image of the movie/tv show
+                        ft.Text(title, weight="bold", size=18),
+                        ft.Image(src=poster_url, width=100, height=150, fit="cover"),],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    ),],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                ),
+                
+                ft.Row([
+                    ft.Text("Genres:", weight="bold", size=16),
+                    ft.Text(f"{genres}", size=14),
+                ],
+                    expand=True,
+                ),
+                ft.Row([
+                    ft.Text("Rating:", weight="bold", size=16),
+                    ft.Text(f"{rating}/10", size=14),
+                ],expand=True,),
+                ft.Row([
+                    ft.Text("Description:", weight="bold", size=16),
+                    ft.Text(f"{overview}", size=14, width=1000),
+                ],expand=True,),
+                ft.ElevatedButton("Back", on_click=lambda e: on_search(f"{last_category}")),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
         
         # Clear the previous results and show details
         results_container.controls.clear()
