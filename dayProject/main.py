@@ -206,7 +206,7 @@ def main(page: ft.Page):
                 ),
                 ft.Row([
                     ft.Text("Rating:", weight="bold", size=16),
-                    ft.Text(f"{rating}/10", size=14),
+                    ft.Text(f"{rating:.1f}/10", size=14),
                 ],expand=True,),
                 ft.Row([
                     ft.Text("Description:", weight="bold", size=16),
