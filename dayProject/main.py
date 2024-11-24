@@ -48,6 +48,7 @@ def search(query, route):
 # Main layout
 def main(page: ft.Page):
     page.title = "Movie / TV Show Search App"
+    page.bgcolor = "#E5FFC0"
     page.padding = 20
     last_category = "All"
 
